@@ -1,0 +1,32 @@
+{
+  "name": "web-parser-frontend",
+  "version": "1.0.0",
+  "description": "网页解析工具前端应用",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "dev": "vue-cli-service serve --open"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "axios": "^1.5.0",
+    "element-plus": "^2.4.1",
+    "@element-plus/icons-vue": "^2.1.0",
+    "vue-json-pretty": "^2.2.4",
+    "dayjs": "^1.11.9",
+    "nprogress": "^0.2.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.8",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "web-page-parser-app",
+  "version": "1.0.0",
+  "description": "完整的网页解析工具 - Vue前端 + Node.js后端 + SQLite数据库",
+  "scripts": {
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run serve",
+    "build": "cd frontend && npm run build",
+    "init": "npm run install:all && npm run init:db",
+    "init:db": "cd backend && npm run init-db"
+  },
+  "keywords": [
+    "web-scraping",
+    "dom-parser",
+    "json-converter",
+    "vue.js",
+    "node.js",
+    "sqlite",
+    "puppeteer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
