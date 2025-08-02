@@ -261,18 +261,20 @@ class WebParser {
 
     // 检查图片和视频
     if (tagName === 'img') {
+      const imageSrc = $el.attr('src') || $el.attr('data-src') || '';
       return {
         type: tagName,
         selector: currentPath.join(' ').trim(),
-        image: $el.attr('src') || $el.attr('data-src') || ''
+        image: this.truncateBase64(imageSrc)
       };
     }
 
     if (tagName === 'video') {
+      const videoSrc = $el.attr('src') || $el.find('source').first().attr('src') || '';
       return {
         type: tagName,
         selector: currentPath.join(' ').trim(),
-        video: $el.attr('src') || $el.find('source').first().attr('src') || ''
+        video: this.truncateBase64(videoSrc)
       };
     }
 
@@ -391,6 +393,34 @@ class WebParser {
     }
     
     return null;
+  }
+
+  /**
+   * 截取base64数据，只保留前缀部分
+   * @param {string} src - 图片或视频的src属性
+   * @returns {string} 截取后的base64字符串
+   */
+  truncateBase64(src) {
+    if (!src) return '';
+    
+    // 检查是否为base64格式
+    const base64Pattern = /^data:([a-zA-Z0-9][a-zA-Z0-9\/+]*);base64,(.+)$/;
+    const match = src.match(base64Pattern);
+    
+    if (match) {
+      const mimeType = match[1];
+      const base64Data = match[2];
+      
+      // 只保留前50个字符的base64数据，并添加省略号
+      const truncatedData = base64Data.length > 50 
+        ? base64Data.substring(0, 50) + '...[truncated]'
+        : base64Data;
+      
+      return `data:${mimeType};base64,${truncatedData}`;
+    }
+    
+    // 如果不是base64格式，直接返回原始src
+    return src;
   }
 
   isValidElement(element) {
