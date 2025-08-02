@@ -44,13 +44,52 @@
                     type="primary" 
                     :loading="loading"
                     @click="handleParse"
-                    :disabled="!isValidUrl"
+                    :disabled="!isValidUrl || !hasValidFilter"
                   >
                     <el-icon v-if="!loading"><Search /></el-icon>
                     {{ loading ? '解析中...' : '开始解析' }}
                   </el-button>
                 </template>
               </el-input>
+            </el-form-item>
+            
+            <!-- 内容类型过滤器 -->
+            <el-form-item>
+              <div class="filter-section">
+                <label class="filter-label">🎯 选择要提取的内容类型：</label>
+                <div class="filter-controls">
+                  <el-checkbox 
+                    v-model="filters.text" 
+                    :disabled="loading"
+                    @change="validateFilters"
+                  >
+                    <el-icon><Document /></el-icon>
+                    文本内容
+                  </el-checkbox>
+                  <el-checkbox 
+                    v-model="filters.image" 
+                    :disabled="loading"
+                    @change="validateFilters"
+                  >
+                    <el-icon><Picture /></el-icon>
+                    图片资源
+                  </el-checkbox>
+                  <el-checkbox 
+                    v-model="filters.video" 
+                    :disabled="loading"
+                    @change="validateFilters"
+                  >
+                    <el-icon><VideoPlay /></el-icon>
+                    视频资源
+                  </el-checkbox>
+                </div>
+                <div v-if="!hasValidFilter" class="filter-error">
+                  <el-text type="danger" size="small">
+                    <el-icon><Warning /></el-icon>
+                    至少需要选择一种内容类型
+                  </el-text>
+                </div>
+              </div>
             </el-form-item>
           </el-form>
           
@@ -119,7 +158,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Link, Search, Loading, DocumentCopy, Download } from '@element-plus/icons-vue'
+import { Link, Search, Loading, DocumentCopy, Download, Document, Picture, VideoPlay, Warning } from '@element-plus/icons-vue'
 import JsonViewer from '@/components/JsonViewer.vue'
 import apiService from '@/services/api'
 
@@ -131,6 +170,10 @@ export default {
     Loading,
     DocumentCopy,
     Download,
+    Document,
+    Picture, 
+    VideoPlay,
+    Warning,
     JsonViewer
   },
   setup() {
@@ -139,6 +182,13 @@ export default {
     const result = ref(null)
     const progressText = ref('准备开始解析...')
     const progressPercentage = ref(0)
+    
+    // 内容类型过滤器
+    const filters = ref({
+      text: true,
+      image: true,
+      video: true
+    })
     
     const examples = ref([
       { name: 'GitHub', url: 'https://github.com' },
@@ -151,6 +201,16 @@ export default {
       const urlPattern = /^https?:\/\/.+/
       return urlPattern.test(url.value)
     })
+
+    const hasValidFilter = computed(() => {
+      return filters.value.text || filters.value.image || filters.value.video
+    })
+
+    const validateFilters = () => {
+      if (!hasValidFilter.value) {
+        ElMessage.warning('至少需要选择一种内容类型')
+      }
+    }
 
     const simulateProgress = () => {
       const steps = [
@@ -181,6 +241,11 @@ export default {
         return
       }
 
+      if (!hasValidFilter.value) {
+        ElMessage.warning('至少需要选择一种内容类型')
+        return
+      }
+
       loading.value = true
       result.value = null
       progressPercentage.value = 0
@@ -188,7 +253,7 @@ export default {
       const progressInterval = simulateProgress()
 
       try {
-        const response = await apiService.parseUrl(url.value)
+        const response = await apiService.parseUrl(url.value, filters.value)
         
         if (response.success) {
           result.value = response.data
@@ -243,7 +308,10 @@ export default {
       progressText,
       progressPercentage,
       examples,
+      filters,
       isValidUrl,
+      hasValidFilter,
+      validateFilters,
       handleParse,
       copyResult,
       saveResult
@@ -334,6 +402,55 @@ export default {
       p {
         color: #666;
         margin-bottom: 20px;
+      }
+    }
+    
+    .filter-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+      
+      .filter-label {
+        display: block;
+        margin-bottom: 15px;
+        font-weight: 500;
+        color: #495057;
+        font-size: 14px;
+      }
+      
+      .filter-controls {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        
+        .el-checkbox {
+          margin-right: 0;
+          
+          :deep(.el-checkbox__label) {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+          }
+          
+          &.is-checked {
+            :deep(.el-checkbox__label) {
+              color: #409eff;
+            }
+          }
+        }
+      }
+      
+      .filter-error {
+        margin-top: 10px;
+        
+        .el-text {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
       }
     }
   }

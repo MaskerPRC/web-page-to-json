@@ -73,6 +73,9 @@ class WebParser {
     // 过滤无用元素
     this.filterUnwantedElements($);
     
+    // 扫描页面，统计class出现次数
+    this.uniqueClasses = this.scanForUniqueClasses($);
+    
     const result = [];
     const startElement = $('body').length > 0 ? $('body') : $('html');
     
@@ -84,6 +87,36 @@ class WebParser {
     });
     
     return result;
+  }
+
+  /**
+   * 扫描页面，找出独一无二的class
+   * @param {object} $ - Cheerio实例
+   * @returns {Set} 独一无二的class集合
+   */
+  scanForUniqueClasses($) {
+    const classCount = {};
+    
+    // 统计所有class的出现次数
+    $('*').each((index, element) => {
+      const $el = $(element);
+      const allClasses = $el.attr('class') ? $el.attr('class').split(/\s+/).filter(cls => cls.trim()) : [];
+      const filteredClasses = this.filterStyleClasses(allClasses);
+      
+      filteredClasses.forEach(cls => {
+        classCount[cls] = (classCount[cls] || 0) + 1;
+      });
+    });
+    
+    // 找出只出现一次的class
+    const uniqueClasses = new Set();
+    Object.keys(classCount).forEach(cls => {
+      if (classCount[cls] === 1) {
+        uniqueClasses.add(cls);
+      }
+    });
+    
+    return uniqueClasses;
   }
 
   filterUnwantedElements($) {
@@ -191,7 +224,7 @@ class WebParser {
     return selector;
   }
 
-  parseElement(element, $) {
+  parseElement(element, $, selectorPath = []) {
     const $el = $(element);
     const tagName = element.tagName.toLowerCase();
     
@@ -199,17 +232,24 @@ class WebParser {
       return null;
     }
     
-    const result = { type: tagName };
-    
+    // 构建当前元素的选择器部分
     const elementId = $el.attr('id');
-    if (elementId && elementId.trim()) {
-      result.id = elementId.trim();
-    }
-    
     const allClasses = $el.attr('class') ? $el.attr('class').split(/\s+/).filter(cls => cls.trim()) : [];
     const filteredClasses = this.filterStyleClasses(allClasses);
-    if (filteredClasses && filteredClasses.length > 0) {
-      result.classes = filteredClasses;
+    
+    // 检查是否有ID或独一无二的class，可以重置选择器路径（忽略上层）
+    let currentPath;
+    const uniqueClass = this.findUniqueClass(filteredClasses);
+    
+    if (elementId && elementId.trim()) {
+      // 有ID，重置路径
+      currentPath = [this.buildSelectorKey(tagName, elementId.trim(), filteredClasses)];
+    } else if (uniqueClass) {
+      // 有独一无二的class，重置路径
+      currentPath = [this.buildSelectorKey(tagName, null, [uniqueClass])];
+    } else {
+      // 普通元素，继承上层路径
+      currentPath = [...selectorPath, this.buildSelectorKey(tagName, null, filteredClasses)];
     }
 
     // 检查文本内容
@@ -217,58 +257,140 @@ class WebParser {
       return this.type === 'text';
     }).text().trim();
 
+    const textContent = $el.clone().children().remove().end().text().trim();
+
     // 检查图片和视频
     if (tagName === 'img') {
-      result.image = $el.attr('src') || $el.attr('data-src') || '';
-      return result;
+      return {
+        type: tagName,
+        selector: currentPath.join(' ').trim(),
+        image: $el.attr('src') || $el.attr('data-src') || ''
+      };
     }
 
     if (tagName === 'video') {
-      result.video = $el.attr('src') || $el.find('source').first().attr('src') || '';
-      return result;
+      return {
+        type: tagName,
+        selector: currentPath.join(' ').trim(),
+        video: $el.attr('src') || $el.find('source').first().attr('src') || ''
+      };
     }
 
+    // 如果有直接文本内容
     if (directText) {
-      result.text = directText;
-      return result;
+      return {
+        type: tagName,
+        selector: currentPath.join(' ').trim(),
+        text: directText
+      };
     }
 
-    const textContent = $el.clone().children().remove().end().text().trim();
+    // 如果是叶子节点且有文本
     if (textContent && $el.children().length === 0) {
-      result.text = textContent;
-      return result;
+      return {
+        type: tagName,
+        selector: currentPath.join(' ').trim(),
+        text: textContent
+      };
     }
 
     // 处理子元素
     const children = [];
     $el.children().each((index, child) => {
-      const childResult = this.parseElement(child, $);
+      const childResult = this.parseElement(child, $, currentPath);
       if (childResult && this.isValidElement(childResult)) {
         children.push(childResult);
       }
     });
 
     if (children.length > 0) {
-      const hasContent = result.text || result.image || result.video;
+      // 智能合并逻辑：统计有多少个并列的内容分支
+      const contentBranches = this.countContentBranches(children);
       
-      if (!hasContent) {
-        // 容器元素：使用CSS选择器格式
-        const elementId = $el.attr('id');
-        const allClasses = $el.attr('class') ? $el.attr('class').split(/\s+/).filter(cls => cls.trim()) : [];
-        const filteredClasses = this.filterStyleClasses(allClasses);
-        
+      // 如果只有一个内容分支，考虑是否可以合并
+      if (contentBranches <= 1) {
+        // 单分支：检查是否可以合并
+        if (children.length === 1) {
+          const child = children[0];
+          if (child.type) {
+            // 子节点是内容节点，直接返回（selector已经正确计算）
+            return child;
+          } else {
+            // 子节点是容器，但只有一个分支，继续保持结构
+            const uniqueClass = this.findUniqueClass(filteredClasses);
+            const selectorKey = this.buildSelectorKey(
+              tagName, 
+              elementId && elementId.trim() ? elementId.trim() : null, 
+              uniqueClass ? [uniqueClass] : (filteredClasses && filteredClasses.length > 0 ? filteredClasses : null)
+            );
+            return { [selectorKey]: children };
+          }
+        } else {
+          // 多个子节点但只有一个内容分支，保留结构
+          const uniqueClass = this.findUniqueClass(filteredClasses);
+          const selectorKey = this.buildSelectorKey(
+            tagName, 
+            elementId && elementId.trim() ? elementId.trim() : null, 
+            uniqueClass ? [uniqueClass] : (filteredClasses && filteredClasses.length > 0 ? filteredClasses : null)
+          );
+          return { [selectorKey]: children };
+        }
+      } else {
+        // 多个内容分支，必须保留容器显示并列关系
+        const uniqueClass = this.findUniqueClass(filteredClasses);
         const selectorKey = this.buildSelectorKey(
           tagName, 
           elementId && elementId.trim() ? elementId.trim() : null, 
-          filteredClasses && filteredClasses.length > 0 ? filteredClasses : null
+          uniqueClass ? [uniqueClass] : (filteredClasses && filteredClasses.length > 0 ? filteredClasses : null)
         );
         return { [selectorKey]: children };
-      } else {
-        result.children = children;
       }
     }
 
-    return result;
+    return null;
+  }
+
+  /**
+   * 计算并列的内容分支数量
+   * @param {Array} children - 子节点数组  
+   * @returns {number} 内容分支数量
+   */
+  countContentBranches(children) {
+    let branches = 0;
+    
+    children.forEach(child => {
+      if (child.type) {
+        // 直接是内容节点，算一个分支
+        branches++;
+      } else {
+        // 是容器节点，检查是否有内容
+        Object.keys(child).forEach(key => {
+          if (Array.isArray(child[key]) && child[key].length > 0) {
+            // 容器有内容，算一个分支
+            branches++;
+          }
+        });
+      }
+    });
+    
+    return branches;
+  }
+
+  /**
+   * 从class列表中找出独一无二的class
+   * @param {Array} classes - class数组
+   * @returns {string|null} 独一无二的class，没有则返回null
+   */
+  findUniqueClass(classes) {
+    if (!classes || !this.uniqueClasses) return null;
+    
+    for (const cls of classes) {
+      if (this.uniqueClasses.has(cls)) {
+        return cls;
+      }
+    }
+    
+    return null;
   }
 
   isValidElement(element) {

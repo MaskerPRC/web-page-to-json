@@ -31,6 +31,7 @@ class Database {
         parse_time INTEGER DEFAULT 0,
         status TEXT DEFAULT 'success',
         error_message TEXT,
+        filters TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -60,20 +61,21 @@ class Database {
       element_count,
       parse_time,
       status = 'success',
-      error_message = null
+      error_message = null,
+      filters = null
     } = data;
 
     const sql = `
       INSERT INTO parse_results 
-      (url, title, parsed_data, element_count, parse_time, status, error_message)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (url, title, parsed_data, element_count, parse_time, status, error_message, filters)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     return new Promise((resolve, reject) => {
       const db = this.db;
       db.run(
         sql,
-        [url, title, JSON.stringify(parsed_data), element_count, parse_time, status, error_message],
+        [url, title, JSON.stringify(parsed_data), element_count, parse_time, status, error_message, filters],
         function(err) {
           if (err) {
             reject(err);
@@ -87,7 +89,8 @@ class Database {
               } else {
                 resolve({
                   ...row,
-                  parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null
+                  parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null,
+                  filters: row.filters ? JSON.parse(row.filters) : null
                 });
               }
             });
@@ -107,7 +110,8 @@ class Database {
         } else if (row) {
           resolve({
             ...row,
-            parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null
+            parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null,
+            filters: row.filters ? JSON.parse(row.filters) : null
           });
         } else {
           resolve(null);
@@ -120,7 +124,7 @@ class Database {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT id, url, title, element_count, parse_time, status, 
-               error_message, created_at, updated_at
+               error_message, filters, created_at, updated_at
         FROM parse_results 
         ORDER BY created_at DESC 
         LIMIT ? OFFSET ?
@@ -131,7 +135,11 @@ class Database {
         if (err) {
           reject(err);
         } else {
-          resolve(rows || []);
+          const processedRows = (rows || []).map(row => ({
+            ...row,
+            filters: row.filters ? JSON.parse(row.filters) : null
+          }));
+          resolve(processedRows);
         }
       });
     });
@@ -167,7 +175,8 @@ class Database {
         } else if (row) {
           resolve({
             ...row,
-            parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null
+            parsed_data: row.parsed_data ? JSON.parse(row.parsed_data) : null,
+            filters: row.filters ? JSON.parse(row.filters) : null
           });
         } else {
           resolve(null);

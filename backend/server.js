@@ -107,13 +107,21 @@ app.get('/api/parse/:id', async (req, res) => {
 // 解析网页URL
 app.post('/api/parse', parseLimit, async (req, res) => {
   try {
-    const { url } = req.body;
+    const { url, filters = { text: true, image: true, video: true } } = req.body;
     
     // 验证URL
     if (!url || typeof url !== 'string') {
       return res.status(400).json({
         success: false,
         error: 'URL参数无效'
+      });
+    }
+    
+    // 验证过滤器参数
+    if (!filters.text && !filters.image && !filters.video) {
+      return res.status(400).json({
+        success: false,
+        error: '至少需要选择一种内容类型（文本、图片或视频）'
       });
     }
     
@@ -126,10 +134,14 @@ app.post('/api/parse', parseLimit, async (req, res) => {
       });
     }
     
-    console.log(`开始解析URL: ${url}`);
+    console.log(`开始解析URL: ${url}，过滤器:`, filters);
+    
+    // 生成缓存键（包含过滤器信息）
+    const filterKey = `${filters.text ? 'T' : ''}${filters.image ? 'I' : ''}${filters.video ? 'V' : ''}`;
+    const cacheKey = `${url}_${filterKey}`;
     
     // 检查是否已有缓存结果
-    const cached = await database.getCachedResult(url);
+    const cached = await database.getCachedResult(cacheKey);
     if (cached && Date.now() - new Date(cached.created_at).getTime() < 24 * 60 * 60 * 1000) {
       console.log('返回缓存结果');
       return res.json({
@@ -142,19 +154,23 @@ app.post('/api/parse', parseLimit, async (req, res) => {
     // 执行解析
     const startTime = Date.now();
     const parsedResult = await webParser.parseUrl(url);
+    
+    // 应用内容类型过滤
+    const filteredData = filterContentByType(parsedResult.data, filters);
     const parseTime = Date.now() - startTime;
     
-    // 保存到数据库
+    // 保存到数据库（使用缓存键）
     const savedResult = await database.saveParseResult({
-      url,
+      url: cacheKey,
       title: parsedResult.title || '未知标题',
-      parsed_data: parsedResult.data,
-      element_count: countElements(parsedResult.data),
+      parsed_data: filteredData,
+      element_count: countElements(filteredData),
       parse_time: parseTime,
-      status: 'success'
+      status: 'success',
+      filters: JSON.stringify(filters)
     });
     
-    console.log(`解析完成，耗时 ${parseTime}ms`);
+    console.log(`解析完成，耗时 ${parseTime}ms，过滤后元素数量: ${countElements(filteredData)}`);
     
     res.json({
       success: true,
@@ -240,21 +256,61 @@ function countElements(data) {
   
   function countRecursive(elements) {
     elements.forEach(element => {
-      count++;
-      if (element.children && Array.isArray(element.children)) {
-        countRecursive(element.children);
+      // 如果是内容节点（有type属性）
+      if (element.type) {
+        count++;
+      } else {
+        // 如果是容器节点（CSS选择器格式）
+        Object.keys(element).forEach(key => {
+          if (Array.isArray(element[key])) {
+            countRecursive(element[key]);
+          }
+        });
       }
-      // 检查CSS选择器格式的属性
-      Object.keys(element).forEach(key => {
-        if (Array.isArray(element[key]) && key !== 'children' && key !== 'classes') {
-          countRecursive(element[key]);
-        }
-      });
     });
   }
   
   countRecursive(data);
   return count;
+}
+
+// 辅助函数：根据内容类型过滤数据
+function filterContentByType(data, filters) {
+  if (!Array.isArray(data)) return data;
+  
+  function filterRecursive(elements) {
+    const filtered = [];
+    
+    elements.forEach(element => {
+      if (element.type) {
+        // 内容节点，检查是否符合过滤条件
+        if ((element.text && filters.text) ||
+            (element.image && filters.image) ||
+            (element.video && filters.video)) {
+          filtered.push(element);
+        }
+      } else {
+        // 容器节点，递归过滤子元素
+        const newElement = {};
+        Object.keys(element).forEach(key => {
+          if (Array.isArray(element[key])) {
+            const filteredChildren = filterRecursive(element[key]);
+            if (filteredChildren.length > 0) {
+              newElement[key] = filteredChildren;
+            }
+          }
+        });
+        // 只有当容器中有内容时才保留
+        if (Object.keys(newElement).length > 0) {
+          filtered.push(newElement);
+        }
+      }
+    });
+    
+    return filtered;
+  }
+  
+  return filterRecursive(data);
 }
 
 // 错误处理中间件

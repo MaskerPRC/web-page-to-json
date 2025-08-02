@@ -85,8 +85,8 @@ const apiService = {
   },
 
   // 解析URL
-  async parseUrl(url) {
-    return await api.post('/parse', { url })
+  async parseUrl(url, filters = { text: true, image: true, video: true }) {
+    return await api.post('/parse', { url, filters })
   },
 
   // 获取解析历史
