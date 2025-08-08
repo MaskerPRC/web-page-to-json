@@ -274,10 +274,8 @@ export default {
           element_count: 0,
           parse_time: 0,
           cached: false,
-          parsed_data: {
-            step1_schema: data.step1Schema,
-            final_code: data.code
-          }
+          parsed_data: data.code || '',
+          step1_schema: data.step1Schema || ''
         }
         progressText.value = '已完成'
         progressPercentage.value = 100
@@ -293,7 +291,7 @@ export default {
 
     const copyResult = async () => {
       try {
-        const jsonString = JSON.stringify(result.value.parsed_data, null, 2)
+        const jsonString = typeof result.value.parsed_data === 'string' ? result.value.parsed_data : JSON.stringify(result.value.parsed_data, null, 2)
         await navigator.clipboard.writeText(jsonString)
         ElMessage.success('JSON已复制到剪贴板')
       } catch (error) {
@@ -302,13 +300,13 @@ export default {
     }
 
     const saveResult = () => {
-      const jsonString = JSON.stringify(result.value.parsed_data, null, 2)
-      const blob = new Blob([jsonString], { type: 'application/json' })
+      const content = typeof result.value.parsed_data === 'string' ? result.value.parsed_data : JSON.stringify(result.value.parsed_data, null, 2)
+      const blob = new Blob([content], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       
       const a = document.createElement('a')
       a.href = url
-      a.download = `parse_result_${Date.now()}.json`
+      a.download = `crawler_${Date.now()}.js`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

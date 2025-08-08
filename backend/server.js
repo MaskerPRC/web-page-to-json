@@ -44,6 +44,9 @@ let llmClient = null;
 // LLM 生成爬虫（多阶段）
 app.post('/api/llm/generate-crawler', parseLimit, async (req, res) => {
   try {
+    if (!llmClient) {
+      return res.status(500).json({ success: false, error: 'LLM 未配置：请设置 OPENAI_API_KEY 环境变量后重启服务' })
+    }
     const { url, goal, contextJson } = req.body || {}
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ success: false, error: '缺少有效的 url' })

@@ -65,7 +65,7 @@
       <el-card class="json-display section-card">
         <template #header>
           <div class="json-header">
-            <span>🔍 解析数据</span>
+            <span>🔍 结果数据</span>
             <div class="json-actions">
               <el-button size="small" @click="refreshData" :loading="refreshing" type="primary" plain>
                 <el-icon><Refresh /></el-icon>
@@ -75,11 +75,18 @@
           </div>
         </template>
         
-        <JsonViewer 
-          v-if="result.parsed_data" 
-          :data="result.parsed_data" 
-          :initial-theme="jsonTheme"
-        />
+        <div class="grid-2">
+          <div>
+            <div class="section-title">步骤一：输出结构定义</div>
+            <JsonViewer v-if="result.step1_schema" :data="result.step1_schema" :initial-theme="jsonTheme" />
+            <el-empty v-else description="暂无" />
+          </div>
+          <div>
+            <div class="section-title">最终代码</div>
+            <JsonViewer v-if="result.parsed_data" :data="result.parsed_data" :initial-theme="jsonTheme" />
+            <el-empty v-else description="暂无" />
+          </div>
+        </div>
         
         <div v-else class="no-data">
           <el-empty description="暂无解析数据" />
