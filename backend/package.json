@@ -18,7 +18,8 @@
     "axios": "^1.5.0",
     "helmet": "^7.1.0",
     "express-rate-limit": "^7.1.5",
-    "validator": "^13.11.0"
+    "validator": "^13.11.0",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -260,22 +260,31 @@ export default {
       const progressInterval = simulateProgress()
 
       try {
-        const response = await apiService.parseUrl(url.value, filters.value)
-        
-        if (response.success) {
-          result.value = response.data
-          progressText.value = '解析完成！'
-          progressPercentage.value = 100
-          
-          ElMessage.success(
-            response.cached ? '已返回缓存结果' : '解析成功完成'
-          )
-        } else {
-          throw new Error(response.error || '解析失败')
+        // Step 1: 生成输出结构 + 代码（服务端与 LLM 串行）
+        progressText.value = '与大模型协商输出结构...'
+        progressPercentage.value = 20
+        const { success, data, error } = await apiService.generateCrawler({ url: url.value, goal: '生成稳健爬虫', contextJson: null })
+        if (!success) throw new Error(error || 'LLM 生成失败')
+        progressText.value = '正在生成并自检爬虫代码...'
+        progressPercentage.value = 80
+
+        // 组织新的结果结构（展示 Step1 schema 与最终代码）
+        result.value = {
+          title: 'LLM 生成的爬虫代码',
+          element_count: 0,
+          parse_time: 0,
+          cached: false,
+          parsed_data: {
+            step1_schema: data.step1Schema,
+            final_code: data.code
+          }
         }
+        progressText.value = '已完成'
+        progressPercentage.value = 100
+        ElMessage.success('生成完成')
       } catch (error) {
-        console.error('解析失败:', error)
-        ElMessage.error('解析失败: ' + error.message)
+        console.error('生成失败:', error)
+        ElMessage.error('生成失败: ' + error.message)
       } finally {
         loading.value = false
         clearInterval(progressInterval)

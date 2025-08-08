@@ -89,6 +89,12 @@ const apiService = {
     return await api.post('/parse', { url, filters })
   },
 
+  // LLM 生成爬虫：分三步（服务端串行执行）
+  async generateCrawler(params) {
+    // params: { url, goal?, contextJson? }
+    return await api.post('/llm/generate-crawler', params)
+  },
+
   // 获取解析历史
   async getHistory(params = {}) {
     const { page = 1, limit = 20 } = params

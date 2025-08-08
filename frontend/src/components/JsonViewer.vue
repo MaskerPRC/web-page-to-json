@@ -24,6 +24,7 @@
     
     <div class="viewer-content" :class="[`theme-${theme}`]">
       <vue-json-pretty
+        v-if="isJson"
         :data="data"
         :show-line-number="showLineNumbers"
         :show-length="true"
@@ -36,6 +37,7 @@
         :show-double-quotes="false"
         @nodeClick="handleNodeClick"
       />
+      <pre v-else class="code-view"><code>{{ codeString }}</code></pre>
     </div>
     
     <!-- 节点信息面板 -->
@@ -95,6 +97,8 @@ export default {
     const theme = ref(props.initialTheme)
     const deep = ref(3)
     const selectedNode = ref(null)
+    const isJson = computed(() => typeof props.data === 'object' && props.data !== null)
+    const codeString = computed(() => typeof props.data === 'string' ? props.data : '')
     
     // 跟随全局暗黑模式
     const syncTheme = () => {
@@ -152,7 +156,9 @@ export default {
       collapseAll,
       handleNodeClick,
       getNodeType,
-      formatNodeValue
+      formatNodeValue,
+      isJson,
+      codeString
     }
   }
 }
@@ -166,6 +172,17 @@ export default {
     background: var(--app-soft-bg);
     border-radius: 8px;
     border: 1px solid var(--app-border-color);
+  }
+  .code-view {
+    font-family: 'Monaco','Menlo','Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 16px 20px;
+    white-space: pre-wrap;
+    background: var(--app-card-bg);
+    color: var(--app-text-color);
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
   }
   
   .viewer-content {

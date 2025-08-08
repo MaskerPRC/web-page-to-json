@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const Database = require('./database/database');
 const WebParser = require('./services/webParser');
+const LlmClient = require('./services/llm');
 
 const app = express();
 const PORT = process.env.PORT || 3025;
@@ -37,8 +38,44 @@ const parseLimit = rateLimit({
 // 初始化数据库和服务
 const database = new Database();
 const webParser = new WebParser();
+let llmClient = null;
 
 // API路由
+// LLM 生成爬虫（多阶段）
+app.post('/api/llm/generate-crawler', parseLimit, async (req, res) => {
+  try {
+    const { url, goal, contextJson } = req.body || {}
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ success: false, error: '缺少有效的 url' })
+    }
+
+    // 阶段1：让模型先确定输出 JSON 结构
+    const step1Prompt = [
+      { role: 'system', content: '你是资深爬虫工程师，擅长为网页抽象稳定的数据结构与生成健壮的爬虫代码。' },
+      { role: 'user', content: `目标网址: ${url}\n任务: 先只给出“爬虫最终输出的大 JSON 数据结构定义”，包含字段说明和类型示例。不要写代码。${goal ? '\n补充目标: ' + goal : ''}` }
+    ]
+    const step1 = await llmClient.chat(step1Prompt)
+
+    // 阶段2：在上一步结构基础上，生成 Node.js 独立可运行的爬虫代码
+    const step2Prompt = [
+      { role: 'system', content: '请生成可直接运行的 Node.js 爬虫代码（只返回代码），包含依赖说明、错误处理、超时与重试、输出为上一步定义的 JSON 结构。' },
+      { role: 'user', content: `网址: ${url}\n输出结构: ${step1}\n上下文JSON(可选): ${contextJson ? JSON.stringify(contextJson).slice(0, 4000) : '无'}` }
+    ]
+    const step2 = await llmClient.chat(step2Prompt, { max_tokens: 6000 })
+
+    // 阶段3：要求模型自审并修复代码中的明显问题（仍只返回最终代码）
+    const step3Prompt = [
+      { role: 'system', content: '请自检上一步的代码是否存在明显问题（依赖缺失、未定义变量、语法错误、未处理异常等），如有请修复并只输出修复后的完整最终代码。' },
+      { role: 'user', content: step2 }
+    ]
+    const finalCode = await llmClient.chat(step3Prompt, { max_tokens: 6000 })
+
+    res.json({ success: true, data: { step1Schema: step1, code: finalCode } })
+  } catch (error) {
+    console.error('LLM 生成爬虫失败:', error)
+    res.status(500).json({ success: false, error: 'LLM 生成失败: ' + error.message })
+  }
+})
 
 // 健康检查
 app.get('/api/health', (req, res) => {
@@ -340,6 +377,12 @@ async function startServer() {
     // 初始化网页解析器
     await webParser.init();
     console.log('网页解析器初始化成功');
+    try {
+      llmClient = new LlmClient();
+      console.log('LLM 客户端初始化成功');
+    } catch (e) {
+      console.warn('LLM 客户端未初始化：', e.message);
+    }
     
     app.listen(PORT, () => {
       console.log(`🚀 服务器启动成功`);
