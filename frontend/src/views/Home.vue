@@ -1,8 +1,8 @@
 <template>
-  <div class="home">
+  <div class="home page">
     <!-- 顶部介绍 -->
-    <div class="intro-section">
-      <el-card class="intro-card">
+    <div class="intro-section page-section">
+      <SectionCard class="intro-card" :shadow="'never'">
         <div class="intro-content">
           <h1>🌐 智能网页解析工具</h1>
           <p>输入任意网址，智能提取网页结构、文本、图片、视频等关键信息，转换为结构化JSON数据</p>
@@ -13,17 +13,12 @@
             <el-tag type="info">样式类过滤</el-tag>
           </div>
         </div>
-      </el-card>
+      </SectionCard>
     </div>
 
     <!-- URL输入区域 -->
-    <div class="parse-section">
-      <el-card class="parse-card">
-        <template #header>
-          <div class="card-header">
-            <span>🔍 开始解析</span>
-          </div>
-        </template>
+    <div class="parse-section page-section">
+      <SectionCard class="parse-card" title="🔍 开始解析" subtitle="输入网址并选择需要的内容类型">
         
         <div class="parse-form">
           <el-form @submit.prevent="handleParse">
@@ -101,56 +96,59 @@
                 :key="example.url"
                 size="small" 
                 plain
+                type="info"
                 @click="url = example.url"
               >
                 {{ example.name }}
               </el-button>
+              <el-button size="small" plain type="primary" @click="prefillRandom">
+                随机示例
+              </el-button>
             </div>
           </div>
         </div>
-      </el-card>
+      </SectionCard>
     </div>
 
     <!-- 解析进度 -->
-    <div v-if="loading" class="progress-section">
-      <el-card>
+    <div v-if="loading" class="progress-section page-section">
+      <SectionCard>
         <div class="progress-content">
           <el-icon class="loading-icon"><Loading /></el-icon>
           <h3>正在解析网页...</h3>
           <p>{{ progressText }}</p>
           <el-progress :percentage="progressPercentage" :show-text="false"></el-progress>
         </div>
-      </el-card>
+      </SectionCard>
     </div>
 
     <!-- 解析结果 -->
-    <div v-if="result && !loading" class="result-section">
-      <el-card class="result-card">
-        <template #header>
-          <div class="result-header">
-            <div class="result-info">
-              <h3>📄 {{ result.title || '解析结果' }}</h3>
-              <div class="result-meta">
-                <el-tag size="small">{{ result.element_count || 0 }} 个元素</el-tag>
-                <el-tag size="small" type="success">{{ result.parse_time || 0 }}ms</el-tag>
-                <el-tag size="small" type="info" v-if="result.cached">缓存结果</el-tag>
-              </div>
-            </div>
-            <div class="result-actions">
-              <el-button size="small" @click="copyResult">
-                <el-icon><DocumentCopy /></el-icon>
-                复制JSON
-              </el-button>
-              <el-button size="small" @click="saveResult" type="primary">
-                <el-icon><Download /></el-icon>
-                下载JSON
-              </el-button>
+    <div v-if="result && !loading" class="result-section page-section">
+      <SectionCard class="result-card">
+        <template #actions>
+          <el-button size="small" @click="copyResult">
+            <el-icon><DocumentCopy /></el-icon>
+            复制JSON
+          </el-button>
+          <el-button size="small" @click="saveResult" type="primary">
+            <el-icon><Download /></el-icon>
+            下载JSON
+          </el-button>
+        </template>
+
+        <div class="result-header">
+          <div class="result-info">
+            <h3>📄 {{ result.title || '解析结果' }}</h3>
+            <div class="result-meta">
+              <el-tag size="small">{{ result.element_count || 0 }} 个元素</el-tag>
+              <el-tag size="small" type="success">{{ result.parse_time || 0 }}ms</el-tag>
+              <el-tag size="small" type="info" v-if="result.cached">缓存结果</el-tag>
             </div>
           </div>
-        </template>
-        
+        </div>
+
         <JsonViewer :data="result.parsed_data" />
-      </el-card>
+      </SectionCard>
     </div>
   </div>
 </template>
@@ -160,6 +158,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Link, Search, Loading, DocumentCopy, Download, Document, Picture, VideoPlay, Warning } from '@element-plus/icons-vue'
 import JsonViewer from '@/components/JsonViewer.vue'
+import SectionCard from '@/components/SectionCard.vue'
 import apiService from '@/services/api'
 
 export default {
@@ -174,7 +173,8 @@ export default {
     Picture, 
     VideoPlay,
     Warning,
-    JsonViewer
+    JsonViewer,
+    SectionCard
   },
   setup() {
     const url = ref('')
@@ -196,6 +196,13 @@ export default {
       { name: 'MDN', url: 'https://developer.mozilla.org' },
       { name: 'Vue.js', url: 'https://vuejs.org' }
     ])
+
+    const prefillRandom = () => {
+      const list = examples.value
+      if (!list.length) return
+      const idx = Math.floor(Math.random() * list.length)
+      url.value = list[idx].url
+    }
 
     const isValidUrl = computed(() => {
       const urlPattern = /^https?:\/\/.+/
@@ -315,6 +322,7 @@ export default {
       handleParse,
       copyResult,
       saveResult
+      ,prefillRandom
     }
   }
 }
@@ -327,7 +335,8 @@ export default {
     
     .intro-card {
       text-align: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: radial-gradient(600px 300px at 10% 10%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 30%, rgba(255,255,255,0.06) 60%),
+        linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
       
@@ -408,15 +417,15 @@ export default {
     .filter-section {
       margin-top: 20px;
       padding: 20px;
-      background: #f8f9fa;
+      background: var(--app-soft-bg);
       border-radius: 8px;
-      border: 1px solid #e9ecef;
+      border: 1px solid var(--app-border-color);
       
       .filter-label {
         display: block;
         margin-bottom: 15px;
         font-weight: 500;
-        color: #495057;
+        color: var(--app-text-color);
         font-size: 14px;
       }
       
@@ -464,7 +473,7 @@ export default {
       .result-info {
         h3 {
           margin: 0 0 10px 0;
-          color: #333;
+          color: var(--app-text-color);
         }
         
         .result-meta {

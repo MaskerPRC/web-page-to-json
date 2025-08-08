@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '@/views/Home.vue'
-import History from '@/views/History.vue'
-import Stats from '@/views/Stats.vue'
-import Result from '@/views/Result.vue'
+const Home = () => import(/* webpackChunkName: "home" */ '@/views/Home.vue')
+const History = () => import(/* webpackChunkName: "history" */ '@/views/History.vue')
+const Stats = () => import(/* webpackChunkName: "stats" */ '@/views/Stats.vue')
+const Result = () => import(/* webpackChunkName: "result" */ '@/views/Result.vue')
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
 
 const routes = [
   {
@@ -41,7 +43,12 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    return { top: 0 }
+  }
 })
 
 // 路由守卫
@@ -50,7 +57,17 @@ router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = to.meta.title
   }
+  NProgress.configure({ showSpinner: false })
+  NProgress.start()
   next()
+})
+
+router.afterEach(() => {
+  NProgress.done()
+})
+
+router.onError(() => {
+  NProgress.done()
 })
 
 export default router

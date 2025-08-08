@@ -1,5 +1,5 @@
 <template>
-  <div class="result">
+  <div class="result page">
     <div v-if="loading" class="loading-container">
       <el-card>
         <div class="loading-content">
@@ -22,7 +22,7 @@
 
     <div v-else-if="result">
       <!-- 结果头部信息 -->
-      <el-card class="result-header">
+      <el-card class="result-header section-card">
         <div class="header-content">
           <div class="result-info">
             <div class="url-section">
@@ -62,12 +62,12 @@
       </el-card>
 
       <!-- JSON展示区域 -->
-      <el-card class="json-display">
+      <el-card class="json-display section-card">
         <template #header>
           <div class="json-header">
             <span>🔍 解析数据</span>
             <div class="json-actions">
-              <el-button size="small" @click="refreshData" :loading="refreshing">
+              <el-button size="small" @click="refreshData" :loading="refreshing" type="primary" plain>
                 <el-icon><Refresh /></el-icon>
                 重新加载
               </el-button>
@@ -87,7 +87,7 @@
       </el-card>
 
       <!-- 错误信息（如果解析失败） -->
-      <el-card v-if="result.status === 'failed'" class="error-info">
+      <el-card v-if="result.status === 'failed'" class="error-info section-card">
         <template #header>
           <span>❌ 解析失败信息</span>
         </template>
@@ -324,6 +324,7 @@ export default {
       justify-content: space-between;
       align-items: center;
       font-weight: bold;
+      color: var(--app-text-color);
     }
     
     .no-data {
@@ -335,9 +336,9 @@ export default {
   .error-info {
     .error-details {
       .error-message {
-        background: #fef0f0;
-        border: 1px solid #fbc4c4;
-        border-radius: 4px;
+        background: rgba(245, 108, 108, 0.08);
+        border: 1px solid rgba(245, 108, 108, 0.35);
+        border-radius: 6px;
         padding: 12px;
         margin-top: 10px;
         color: #f56c6c;

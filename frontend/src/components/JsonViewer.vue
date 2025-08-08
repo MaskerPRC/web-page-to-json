@@ -2,11 +2,11 @@
   <div class="json-viewer">
     <div class="viewer-controls">
       <el-space>
-        <el-button size="small" @click="expandAll">
+        <el-button size="small" @click="expandAll" type="primary" plain>
           <el-icon><Plus /></el-icon>
           全部展开
         </el-button>
-        <el-button size="small" @click="collapseAll">
+        <el-button size="small" @click="collapseAll" type="info" plain>
           <el-icon><Minus /></el-icon>
           全部折叠
         </el-button>
@@ -95,6 +95,17 @@ export default {
     const theme = ref(props.initialTheme)
     const deep = ref(3)
     const selectedNode = ref(null)
+    
+    // 跟随全局暗黑模式
+    const syncTheme = () => {
+      const isDark = document.documentElement.classList.contains('dark')
+      theme.value = isDark ? 'dark' : 'light'
+    }
+    syncTheme()
+    if (typeof window !== 'undefined') {
+      const observer = new MutationObserver(syncTheme)
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    }
 
     const expandAll = () => {
       deep.value = 99
@@ -151,14 +162,14 @@ export default {
 .json-viewer {
   .viewer-controls {
     margin-bottom: 15px;
-    padding: 15px;
-    background: #f8f9fa;
+    padding: 12px 15px;
+    background: var(--app-soft-bg);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--app-border-color);
   }
   
   .viewer-content {
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--app-border-color);
     border-radius: 8px;
     overflow: hidden;
     
@@ -170,7 +181,7 @@ export default {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
       font-size: 14px;
       line-height: 1.5;
-      padding: 20px;
+      padding: 16px 20px;
       max-height: 600px;
       overflow: auto;
     }

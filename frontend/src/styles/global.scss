@@ -16,6 +16,97 @@ body {
   min-height: 100vh;
 }
 
+// 页面切换动画容器
+.view-fade-enter-active,
+.view-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.view-fade-enter-from,
+.view-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+// CSS 变量：用于暗黑模式与主题色
+:root {
+  --app-text-color: #303133;
+  --app-text-secondary: #606266;
+  --app-border-color: #ebeef5;
+  --app-card-bg: #ffffff;
+  --app-soft-bg: #f8f9fa;
+  /* Element Plus 主题变量（浅色） */
+  --el-color-primary: #409eff;
+  --el-text-color-primary: var(--app-text-color);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-border-color: var(--app-border-color);
+}
+
+html.dark {
+  --app-text-color: #e5e7eb;
+  --app-text-secondary: #9ca3af;
+  --app-border-color: rgba(255, 255, 255, 0.08);
+  --app-card-bg: #0f172a;
+  --app-soft-bg: rgba(255, 255, 255, 0.04);
+  /* Element Plus 主题变量（深色） */
+  --el-color-primary: #79c0ff;
+  --el-text-color-primary: var(--app-text-color);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-border-color: var(--app-border-color);
+}
+
+// 页面与分区工具
+.page {
+  padding: 8px;
+}
+.page-section {
+  margin-bottom: 20px;
+}
+.section-title {
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  color: var(--app-text-color);
+}
+.section-subtitle {
+  margin: 0 0 16px 0;
+  color: var(--app-text-secondary);
+}
+.section-card {
+  .el-card__header { font-weight: 700; }
+}
+
+// 简易响应式网格
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 992px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+// NProgress 顶部进度条主题化
+#nprogress {
+  pointer-events: none;
+}
+#nprogress .bar {
+  background: #409eff;
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+#nprogress .peg {
+  box-shadow: 0 0 10px #409eff, 0 0 5px #409eff;
+}
+html.dark #nprogress .bar {
+  background: #79c0ff;
+}
+html.dark #nprogress .peg {
+  box-shadow: 0 0 10px #79c0ff, 0 0 5px #79c0ff;
+}
+
 // 滚动条样式
 ::-webkit-scrollbar {
   width: 8px;
@@ -38,25 +129,38 @@ body {
 
 // Element Plus 组件样式覆盖
 .el-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--app-border-color);
+  background: var(--app-card-bg);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.10);
+  }
   
   .el-card__header {
-    padding: 20px;
-    border-bottom: 1px solid #f0f0f0;
-    background: #fafafa;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--app-border-color);
+    background: var(--app-soft-bg);
     font-weight: 600;
   }
   
   .el-card__body {
-    padding: 20px;
+    padding: 20px 24px;
   }
 }
 
 .el-button {
   border-radius: 8px;
   font-weight: 500;
+  transition: box-shadow 0.18s ease, transform 0.12s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(64, 158, 255, 0.2);
+  }
   
   &.is-plain {
     background: rgba(255, 255, 255, 0.8);
@@ -68,6 +172,7 @@ body {
   .el-input__wrapper {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.18s ease;
     
     &.is-focus {
       box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
@@ -81,7 +186,7 @@ body {
   
   .el-table__header {
     th {
-      background: #fafafa;
+      background: var(--app-soft-bg);
       font-weight: 600;
     }
   }
@@ -100,6 +205,13 @@ body {
   .el-progress-bar__inner {
     border-radius: 10px;
   }
+}
+
+// 顶部 Header 粘性效果（提升层级与毛玻璃）
+.el-header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 // 自定义动画
@@ -180,5 +292,25 @@ body {
   .el-card {
     box-shadow: none;
     border: 1px solid #ddd;
+  }
+}
+
+// 暗黑模式覆盖
+html.dark {
+  body {
+    color: var(--app-text-color);
+    background: #0b1220;
+  }
+
+  .el-card__header {
+    color: var(--app-text-color);
+  }
+
+  .el-input .el-input__wrapper {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .el-table__row:hover > td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
   }
 }

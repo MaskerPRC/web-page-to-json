@@ -61,6 +61,8 @@ module.exports = defineConfig({
           }
         }
       })
+
+    // 如需进一步减小体积，可迁移到 Vite 并使用按需自动导入插件
   },
   
   // CSS配置
@@ -68,7 +70,7 @@ module.exports = defineConfig({
     loaderOptions: {
       scss: {
         additionalData: `
-          @import "@/styles/variables.scss";
+          @use "@/styles/variables.scss" as *;
         `
       }
     }

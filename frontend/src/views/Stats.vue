@@ -1,14 +1,15 @@
 <template>
-  <div class="stats">
+  <div class="stats page">
     <div class="page-header">
       <h1>📊 统计信息</h1>
       <p>系统解析数据统计和分析</p>
     </div>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-cards">
+    <el-row :gutter="20" class="stats-cards page-section">
       <el-col :span="6">
-        <el-card class="stat-card total">
+        <el-skeleton v-if="loading" :rows="3" animated />
+        <el-card v-else class="stat-card total">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon><Document /></el-icon>
@@ -22,7 +23,8 @@
       </el-col>
       
       <el-col :span="6">
-        <el-card class="stat-card success">
+        <el-skeleton v-if="loading" :rows="3" animated />
+        <el-card v-else class="stat-card success">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon><SuccessFilled /></el-icon>
@@ -36,7 +38,8 @@
       </el-col>
       
       <el-col :span="6">
-        <el-card class="stat-card failed">
+        <el-skeleton v-if="loading" :rows="3" animated />
+        <el-card v-else class="stat-card failed">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon><CircleCloseFilled /></el-icon>
@@ -50,7 +53,8 @@
       </el-col>
       
       <el-col :span="6">
-        <el-card class="stat-card rate">
+        <el-skeleton v-if="loading" :rows="3" animated />
+        <el-card v-else class="stat-card rate">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon><TrendCharts /></el-icon>
@@ -65,9 +69,10 @@
     </el-row>
 
     <!-- 详细信息 -->
-    <el-row :gutter="20" class="detail-cards">
+    <el-row :gutter="20" class="detail-cards page-section">
       <el-col :span="12">
-        <el-card>
+        <el-skeleton v-if="loading" :rows="6" animated style="margin-bottom: 20px" />
+        <el-card v-else>
           <template #header>
             <div class="card-header">
               <span>⚡ 性能指标</span>
@@ -103,7 +108,8 @@
       </el-col>
       
       <el-col :span="12">
-        <el-card>
+        <el-skeleton v-if="loading" :rows="6" animated style="margin-bottom: 20px" />
+        <el-card v-else>
           <template #header>
             <div class="card-header">
               <span>📈 成功率分析</span>
@@ -143,7 +149,7 @@
     </el-row>
 
     <!-- 系统状态 -->
-    <el-card class="system-status">
+    <el-card class="system-status section-card page-section">
       <template #header>
         <div class="card-header">
           <span>🔧 系统状态</span>
@@ -297,6 +303,10 @@ export default {
     margin-bottom: 30px;
     
     .stat-card {
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      &:hover {
+        transform: translateY(-2px);
+      }
       &.total {
         .stat-icon {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -345,12 +355,12 @@ export default {
             font-size: 2rem;
             font-weight: bold;
             margin: 0 0 5px 0;
-            color: #333;
+            color: var(--app-text-color);
           }
           
           p {
             margin: 0;
-            color: #666;
+            color: var(--app-text-secondary);
             font-size: 14px;
           }
         }
@@ -374,7 +384,7 @@ export default {
         justify-content: space-between;
         align-items: center;
         padding: 15px 0;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--app-border-color);
         
         &:last-child {
           border-bottom: none;
@@ -382,12 +392,12 @@ export default {
         
         .metric-label {
           font-weight: 500;
-          color: #333;
+          color: var(--app-text-color);
         }
         
         .metric-value {
           .time-text {
-            color: #666;
+            color: var(--app-text-secondary);
             font-size: 14px;
           }
         }
@@ -442,7 +452,7 @@ export default {
         justify-content: space-between;
         align-items: center;
         padding: 15px 0;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--app-border-color);
         
         &:last-child {
           border-bottom: none;
@@ -450,11 +460,11 @@ export default {
         
         .status-label {
           font-weight: 500;
-          color: #333;
+          color: var(--app-text-color);
         }
         
         .status-value {
-          color: #666;
+          color: var(--app-text-secondary);
           font-family: monospace;
         }
       }

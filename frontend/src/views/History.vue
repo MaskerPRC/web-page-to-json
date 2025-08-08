@@ -1,12 +1,12 @@
 <template>
-  <div class="history">
+  <div class="history page">
     <div class="page-header">
       <h1>📚 解析历史</h1>
       <p>查看所有的网页解析记录</p>
     </div>
 
     <!-- 搜索和筛选 -->
-    <el-card class="filter-card">
+    <el-card class="filter-card section-card" :body-style="{ paddingBottom: '8px' }">
       <el-row :gutter="20">
         <el-col :span="12">
           <el-input
@@ -37,7 +37,8 @@
     </el-card>
 
     <!-- 历史记录表格 -->
-    <el-card class="table-card">
+    <el-card class="table-card section-card">
+      <el-skeleton v-if="loading" :rows="5" animated style="margin: 6px 0" />
       <el-table
         :data="historyList"
         v-loading="loading"
@@ -284,12 +285,12 @@ export default {
     
     h1 {
       font-size: 2rem;
-      color: #333;
+      color: var(--app-text-color);
       margin-bottom: 10px;
     }
     
     p {
-      color: #666;
+      color: var(--app-text-secondary);
       font-size: 1.1rem;
     }
   }
@@ -311,6 +312,7 @@ export default {
     
     .title-cell {
       font-weight: 500;
+      color: var(--app-text-color);
     }
     
     .time-cell {
@@ -320,8 +322,9 @@ export default {
       
       .el-icon {
         margin-right: 5px;
-        color: #909399;
+        color: var(--app-text-secondary);
       }
+      color: var(--app-text-secondary);
     }
     
     .pagination-wrapper {
@@ -336,7 +339,7 @@ export default {
   cursor: pointer;
   
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--app-soft-bg);
   }
 }
 </style>
